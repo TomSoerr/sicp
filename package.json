@@ -1,0 +1,11 @@
+{
+  "name": "sicp-exercise",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "main.js",
+  "dependencies": {
+    "sicp": "^1.1.4",
+    "yarn": "^1.22.19"
+  }
+}
