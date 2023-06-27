@@ -10,4 +10,4 @@ helpful links
 ## Installation
 
 To install the sicp package the node version must be 16
-Run `nvm install 16` to install the correct version of node. Now run yarn or npm install to install the dependencies.
+Run `nvm install 16` to install the correct version of node and `nvm use 16` to select the environment. Now run yarn or npm install to install the dependencies.
