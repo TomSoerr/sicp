@@ -8,6 +8,6 @@ Helpful links:
 - [SICP JS Github](https://github.com/source-academy/sicp/blob/master/README.md)
 - [SICP JS Book](https://sourceacademy.org/sicpjs/index)
 
-## Installation
+## Installation in codespaces
 
-To install the sicp package in codespaces these apt packages must installed `"libxi-dev xserver-xorg-dev libxext-dev"`
+To install the sicp package in codespaces these apt packages must be installed `libxi-dev xserver-xorg-dev libxext-dev build-essential`. Python should also be installed. To use the latest stable node version run `nvm install --lts` and `nvm use --lts`. If git does not commit because of a invalid authentication run `git config --global user.email "<email>`

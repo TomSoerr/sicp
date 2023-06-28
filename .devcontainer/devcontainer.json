@@ -6,9 +6,8 @@
 	"image": "mcr.microsoft.com/devcontainers/javascript-node:1-20-bullseye",
 	"features": {
 		"ghcr.io/devcontainers-contrib/features/prettier:1": {},
-		"ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {
-			"packages": "libxi-dev,xserver-xorg-dev,libxext-dev,build-essential"
-		}
+		"ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {"packages": "libxi-dev,xserver-xorg-dev,libxext-dev,build-essential"},
+		"ghcr.io/devcontainers/features/python:1": {}
 		
 	}
 
