@@ -1,10 +1,11 @@
 {
   "name": "sicp-exercise",
   "version": "1.0.0",
+  "description": "In this repository, I will upload my solutions to exercises in the book Structure and Interpretation of Computer Programs in JavaScript. The solutions should not be regarded as the most effective approach to resolving the issues. They should only represent the progress I have made.",
+  "main": "index.js",
   "private": true,
-  "main": "main.js",
-  "dependencies": {
-    "sicp": "^1.1.4"
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
     "eslint": "^8.43.0",
