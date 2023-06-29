@@ -11,3 +11,7 @@ Helpful links:
 ## Installation in codespaces
 
 To install the sicp package in codespaces these apt packages must be installed `libxi-dev xserver-xorg-dev libxext-dev build-essential`. Python should also be installed. To use the latest stable node version run `nvm install --lts` and `nvm use --lts`. If git does not commit because of a invalid authentication run `git config --global user.email "<email>`
+
+## The code
+
+When programming a solution I will comment the output under the function
