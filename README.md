@@ -7,6 +7,7 @@ Helpful links:
 - [NPM sicp package](https://www.npmjs.com/package/sicp)
 - [SICP JS Github](https://github.com/source-academy/sicp/blob/master/README.md)
 - [SICP JS Book](https://sourceacademy.org/sicpjs/index)
+- [SICP package docs](https://docs.sourceacademy.org/source_4/global.html#)
 
 ## Installation in codespaces
 
