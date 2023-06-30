@@ -42,8 +42,6 @@ function evasSqrtIter(guess, x) {
   );
 }
 
-console.log(evasSqrtIter(3, 9))
-
 // The interpreter works in application order like this:
 
 // evasSqrtIter(3, 9)
@@ -54,5 +52,6 @@ console.log(evasSqrtIter(3, 9))
 // conditional(true, 3, conditional(isGoodEnough(3, 9), 3, evasSqrtIter(improve(3, 9), 9)))
 // and so on
 
-// There will be an infinit loop because the interpreter keeps evaluating the arguments expressions and would only then apply the function expression. 
+// There will be an infinit loop because the interpreter keeps evaluating the arguments expressions and would only then apply the function expression. Because of that the evasSqrtIter function keeps evaluating its return expression over an over again.
 
+export { square, abs, average, improve };
