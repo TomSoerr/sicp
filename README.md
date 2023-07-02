@@ -1,7 +1,9 @@
 # SICP JS Exersices
 
 In this repository, I will upload my solutions to exercises in the book Structure and Interpretation of Computer Programs in JavaScript. The solutions should not be regarded as the most effective approach to resolving the issues. They should only represent the progress I have made.
-Helpful links:
+The exercises and the whole book can be found here: [Source Academy](https://sourceacademy.org/sicpjs/index)
+
+Other helpful links:
 
 - [Source Academy IDE of choice](https://about.sourceacademy.org/package/)
 - [NPM sicp package](https://www.npmjs.com/package/sicp)
