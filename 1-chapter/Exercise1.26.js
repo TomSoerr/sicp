@@ -1,0 +1,1 @@
+// the square function uses the result that is only calculated once. When using the * operator for every log(n) call the function is called again 2 times. This cancels the division by 2. So O(n)
