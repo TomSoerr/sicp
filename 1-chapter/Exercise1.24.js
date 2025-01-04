@@ -4,10 +4,6 @@ function square(x) {
   return x * x;
 }
 
-function is_even(n) {
-  return n % 2 === 0;
-}
-
 function expmod(base, exp, m) {
   return exp === 0
     ? 1
@@ -30,10 +26,6 @@ function fast_is_prime(n, times) {
     : fermat_test(n)
       ? fast_is_prime(n, times - 1)
       : false;
-}
-
-function is_prime(n) {
-  return n === fast_is_prime(n, 3);
 }
 
 function report_prime(elapsed_time, n) {
