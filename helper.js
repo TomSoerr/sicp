@@ -34,4 +34,26 @@ const log2 = Math.log2;
 
 const log3 = (x) => Math.log(x) / Math.log(3);
 
-export { display, pair, head, tail, gcd, sqrt, square, raise, log2, abs, log3 };
+const min = Math.min;
+const max = Math.max;
+
+const error = (msg) => {
+  throw new Error(msg);
+};
+
+export {
+  display,
+  pair,
+  head,
+  tail,
+  gcd,
+  sqrt,
+  square,
+  raise,
+  log2,
+  abs,
+  log3,
+  min,
+  max,
+  error,
+};
