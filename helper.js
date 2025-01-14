@@ -1,7 +1,9 @@
+import util from 'util';
 // all these function are written by my self for the specific exercises
 // but for clarity they are inside this file
+const display = (msg) =>
+  console.log(util.inspect(msg, { depth: null, maxArrayLength: null }));
 
-const display = console.log;
 const pair = (a, b) => [a, b];
 const head = (arr) => arr[0];
 const tail = (arr) => arr[1];
@@ -41,8 +43,25 @@ const error = (msg) => {
   throw new Error(msg);
 };
 
+function list(...args) {
+  const el = args.shift();
+  return args.length == 0 ? [el, null] : [el, list(...args)];
+}
+
+const isNull = (item) => item == null;
+
+const length = (items) => (isNull(items) ? 0 : 1 + length(tail(items)));
+
+const map = (fn, items) =>
+  isNull(items) ? null : pair(fn(head(items)), map(fn, tail(items)));
+
+const isPair = (x) => Array.isArray(x);
+
+const append = (a, b) => (isNull(a) ? b : pair(head(a), append(tail(a), b)));
+
 export {
   display,
+  append,
   pair,
   head,
   tail,
@@ -56,4 +75,9 @@ export {
   min,
   max,
   error,
+  list,
+  isNull,
+  length,
+  map,
+  isPair,
 };

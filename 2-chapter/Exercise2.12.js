@@ -1,3 +1,16 @@
-// I explored the parallel resistor problem with interval arithmetic, I discovered that different formulas for parallel resistors ((R1*R2)/(R1+R2) and 1/(1/R1 + 1/R2)) give different  results due to the dependency problem. I found that affine arithmetic could solve this by  representing intervals as z = X0 + X1e1 + X2e2 + ....
+import { abs } from '../helper.js';
+import { lowerBound, upperBound, makeInterval } from './Exercise2.7.js';
 
-// For the division part, I came up with the idea to split it into a multiplication A/B = A * (1/B). Since electrical components typically have tolerances less than 30%, I realized I could use a Taylor series to approximate 1/B. This would result in a function f(x,y) where x and y represent the noise symbols. Finding the extrema of this function would give me the interval bounds.
+const center = (i) => 0.5 * (lowerBound(i) + upperBound(i));
+
+function makeCenterPercent(c, p) {
+  const width = 0.01 * p * c;
+  return makeInterval(c - width, c + width);
+}
+
+function percent(i) {
+  const width = (upperBound(i) - lowerBound(i)) * 0.5;
+  return abs((width / center(i)) * 100);
+}
+
+export { makeCenterPercent, percent };

@@ -1,0 +1,5 @@
+Equivalent algebraic expressions lead to different results because the program does not track how often a variabel with its uncertainty is used in the formula.
+
+We can solve this problem by using [affine arithmetics](https://en.wikipedia.org/wiki/Affine_arithmetic) instead of interval arithmetics. In affine arithmetics a number with uncertainty is not defined with an interval but with a pair of a center value and an uncertainty that. A number is in the form $a + b\epsilon_{1}$ with $\epsilon \in [-1,1]$. Using this method we keep track of the uncertaintys. If to numbers are the same their $\epsilon$ is also the same and they could cancel out. 
+ 
+Division is still pretty hard. We write $\frac{A}{B}$ as $A \cdot \frac{1}{B}$ and approximate $\frac{1}{B}$ with the tailor series. Then we only need to multiply. If result will include two variables $\epsilon_{1}$ and $\epsilon_{2}$. We can then create a function with two parameters as the result of the multiplication $f(x,y)$ with $x,y \in[-1,1]$. Now we need to find the partial derivative and calculate the maxima in minima. The found values are the upper and lower bound of our central value.  
