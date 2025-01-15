@@ -48,7 +48,7 @@ function list(...args) {
   return args.length == 0 ? [el, null] : [el, list(...args)];
 }
 
-const isNull = (item) => item == null;
+const isNull = (item) => item === null;
 
 const length = (items) => (isNull(items) ? 0 : 1 + length(tail(items)));
 
