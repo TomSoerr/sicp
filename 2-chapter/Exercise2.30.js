@@ -11,8 +11,8 @@ import {
 
 const squareTree = (tree) =>
   isNull(tree) ? null
-  : !isPair(tree) ? tree * tree
-  : pair(squareTree(head(tree)), squareTree(tail(tree)));
+        : !isPair(tree) ? tree * tree
+        : pair(squareTree(head(tree)), squareTree(tail(tree)));
 
 const squareTreeR = (tree) =>
   map((sub) => (isPair(sub) ? squareTreeR(sub) : sub * sub), tree);
