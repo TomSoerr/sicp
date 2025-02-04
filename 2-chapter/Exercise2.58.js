@@ -17,26 +17,6 @@ const is_same_variable = (v1, v2) =>
 
 const number_equal = (exp, num) => is_number(exp) && exp === num;
 
-function is_exp(x) {
-  return is_pair(x) && head(x) === '**';
-}
-
-function base(s) {
-  return head(tail(s));
-}
-
-function exponent(s) {
-  return head(tail(tail(s)));
-}
-
-function make_exp(e1, e2) {
-  return (
-    number_equal(e1, 1) || number_equal(e2, 0) ? 1
-    : number_equal(e2, 1) ? 21
-    : list('**', e1, e2)
-  );
-}
-
 function deriv(exp, variable) {
   return (
     is_number(exp) ? 0
@@ -50,12 +30,6 @@ function deriv(exp, variable) {
         make_product(multiplier(exp), deriv(multiplicand(exp), variable)),
         make_product(deriv(multiplier(exp), variable), multiplicand(exp)),
       )
-    : is_exp(exp) ?
-      make_product(
-        exponent(exp),
-        make_exp(base(exp), exponent(exp) - 1),
-        deriv(base(exp), variable),
-      )
     : error(exp, 'unknown expression type -- deriv')
   );
 }
@@ -65,7 +39,13 @@ function deriv(exp, variable) {
 const is_sum = (x) => is_pair(x) && head(tail(x)) === '+';
 const addend = (s) => head(s);
 
-const augend = (s) => head(tail(tail(s)));
+const augend = (s) =>
+  is_null(tail(tail(tail(s)))) ? head(tail(tail(s)))
+  : is_sum(tail(tail(s))) ?
+    make_sum(addend(tail(tail(s))), augend(tail(tail(s))))
+  : is_product(tail(tail(s))) ?
+    make_product(multiplier(tail(tail(s))), multiplicand(tail(tail(s))))
+  : error(s, 'unknown expression type -- deriv');
 
 const make_sum = (a1, a2) =>
   number_equal(a1, 0) ? a2
@@ -76,7 +56,7 @@ const make_sum = (a1, a2) =>
 const is_product = (x) => is_pair(x) && head(tail(x)) === '*';
 const multiplier = (s) => head(s);
 
-const multiplicand = (s) => head(tail(tail(s)));
+const multiplicand = (s) => augend(s);
 
 const make_product = (m1, m2) =>
   number_equal(m1, 0) || number_equal(m2, 0) ? 0
@@ -88,3 +68,5 @@ const make_product = (m1, m2) =>
 display(
   deriv(list('x', '+', list(3, '*', list('x', '+', list('y', '+', 2)))), 'x'),
 );
+
+display(deriv(list('x', '+', 3, '*', list('x', '+', 'y', '+', 2)), 'x'));
