@@ -3,10 +3,10 @@ import {
   head,
   tail,
   is_null,
-  append,
   pair,
   display,
   math_floor,
+  length,
 } from 'sicp';
 
 function entry(tree) {
@@ -40,6 +40,7 @@ function tree_to_list_2(tree) {
 function list_to_tree(elements) {
   return head(partial_tree(elements, length(elements)));
 }
+
 function partial_tree(elts, n) {
   if (n === 0) {
     return pair(null, elts);
@@ -57,44 +58,38 @@ function partial_tree(elts, n) {
   }
 }
 
-// above given by previous exercises
-
 function union_set(set1, set2) {
-  if (is_null(set1)) return set2;
-  if (is_null(set2)) return set1;
-
-  const x1 = entry(set1);
-  const x2 = entry(set2);
-  return (
-    x1 === x2 ?
-      make_tree(
-        x1,
-        union_set(left_branch(set1), left_branch(set2)),
-        union_set(right_branch(set1), right_branch(set2)),
-      )
-    : x1 < x2 ? make_tree(idk, union_set())
-      // x1 > x2
-    : pair(x2, union_set(set1, tail(set2)))
-  );
-}
-
-function intersection_set(set1, set2) {
-  if (is_null(set1) || is_null(set2)) {
-    return null;
+  if (is_null(set1)) {
+    return set2;
+  } else if (is_null(set2)) {
+    return set1;
   } else {
     const x1 = head(set1);
     const x2 = head(set2);
     return (
-      x1 === x2 ? pair(x1, intersection_set(tail(set1), tail(set2)))
-      : x1 < x2 ? intersection_set(tail(set1), set2)
-        // x2 < x1x2 < x1
-      : intersection_set(set1, tail(set2))
+      x1 === x2 ? pair(x1, union_set(tail(set1), tail(set2)))
+      : x1 < x2 ? pair(x1, union_set(tail(set1), set2))
+      : pair(x2, union_set(set1, tail(set2)))
     );
   }
 }
 
+// above given by previous exercises
+
+function union_set_tree(tree1, tree2) {
+  const set1 = tree_to_list_2(tree1);
+  const set2 = tree_to_list_2(tree2);
+  return list_to_tree(union_set(set1, set2));
+}
+
+function intersection_set_tree(tree1, tree2) {
+  const set1 = tree_to_list_2(tree1);
+  const set2 = tree_to_list_2(tree2);
+  return list_to_tree(intersection_set_tree(set1, set2));
+}
+
 display(
-  union_set(
+  union_set_tree(
     list_to_tree(list(1, 2, 3, 4)),
     list_to_tree(list(4, 5, 6, 7, 8, 9)),
   ),
