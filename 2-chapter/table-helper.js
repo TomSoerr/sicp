@@ -7,7 +7,17 @@ import {
   is_null,
   equal,
   set_tail,
+  is_pair,
+  error,
 } from 'sicp';
+
+const type_tag = (datum) =>
+  is_pair(datum) ? head(datum) : error(datum, 'bad tagged datum -- type_tag');
+
+const attach_tag = (type_tag, contents) => pair(type_tag, contents);
+
+const contents = (datum) =>
+  is_pair(datum) ? tail(datum) : error(datum, 'bad tagged datum -- contents');
 
 // operation_table, put and get
 // from chapter 3 (section 3.3.3)
@@ -62,4 +72,4 @@ const operation_table = make_table();
 const get = operation_table('lookup');
 const put = operation_table('insert');
 
-export { get, put };
+export { get, put, type_tag, contents, attach_tag };
