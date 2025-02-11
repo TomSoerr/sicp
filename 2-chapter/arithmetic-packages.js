@@ -12,6 +12,7 @@ import {
   error,
   is_null,
   is_string,
+  map,
 } from 'sicp';
 
 import { attach_tag, type_tag, contents } from './table-helper.js';
@@ -78,6 +79,7 @@ function install_real_package(put, get) {
   put('mul', list('real', 'real'), (x, y) => tag(x * y));
   put('div', list('real', 'real'), (x, y) => tag(x / y));
   put('make', 'real', (x) => tag(x));
+  put('neg', list('real'), (x) => tag(-1 * x));
   return 'real';
 }
 
@@ -301,13 +303,10 @@ function install_is_equal_package(put, get, apply_generic) {
   const denom = (x) => get('denom', 'rational')(x);
   const numer = (x) => get('numer', 'rational')(x);
   const is_equal = (x, y) => apply_generic('is_equal', list(x, y));
-  const magnitude = (z) => apply_generic('magnitude', list(z));
 
   const is_equal_to_zero = (x) => apply_generic('is_equal_to_zero', list(x));
   const term_list = tail;
   const coeff = (term) => head(tail(term));
-  const first_term = head;
-  const rest_terms = tail;
 
   put(
     'is_equal',
@@ -340,7 +339,7 @@ function install_is_equal_package(put, get, apply_generic) {
     );
 
   put('is_equal_to_zero', list('polynomial'), (n) =>
-    check_terms_equal_to_zero(term_list(n)),
+    check_terms_equal_to_zero(contents(term_list(n))),
   );
 }
 
@@ -351,34 +350,80 @@ function install_is_equal_package(put, get, apply_generic) {
 //############################################################################//
 
 function install_polynomial_package(put, get, apply_generic) {
-  const is_variable = is_string;
-  const the_empty_termlist = null;
+  const generic_negate = (x) => apply_generic('neg', list(x));
 
   const add = (x, y) => apply_generic('add', list(x, y));
   const mul = (x, y) => apply_generic('mul', list(x, y));
 
+  const tag = (p) => attach_tag('polynomial', p);
+
+  const is_variable = is_string;
   const is_same_variable = (v1, v2) =>
     is_variable(v1) && is_variable(v2) && v1 === v2;
-  const is_equal_to_zero = (x) => apply_generic('is_equal_to_zero', list(x));
 
   const make_poly = (variable, term_list) => pair(variable, term_list);
-  const variable = (p) => head(p);
-  const term_list = (p) => tail(p);
-
-  const adjoin_term = (term, term_list) =>
-    is_equal_to_zero(head(tail(term))) ? term_list : pair(term, term_list);
-  const first_term = (term_list) => head(term_list);
-  const rest_terms = (term_list) => tail(term_list);
-  const is_empty_termlist = (term_list) => is_null(term_list);
-
-  const make_term = (order, coeff) => list(order, coeff);
-  const order = (term) => head(tail(term));
-  const coeff = (term) => head(tail(tail(term)));
+  const variable = head;
+  const term_list = tail;
 
   const add_poly = (p1, p2) =>
     is_same_variable(variable(p1), variable(p2)) ?
-      make_poly(variable(p1), add_terms(term_list(p1), term_list(p2)))
+      make_poly(variable(p1), add(term_list(p1), term_list(p2)))
     : error(list(p1, p2), 'polys not in same var -- add_poly');
+
+  const mul_poly = (p1, p2) =>
+    is_same_variable(variable(p1), variable(p2)) ?
+      make_poly(variable(p1), mul(term_list(p1), term_list(p2)))
+    : error(list(p1, p2), 'polys not in same var -- mul_poly');
+
+  const negate_poly = (p) =>
+    make_poly(variable(p), generic_negate(term_list(p)));
+
+  put('add', list('polynomial', 'polynomial'), (p1, p2) =>
+    tag(add_poly(p1, p2)),
+  );
+  put('sub', list('polynomial', 'polynomial'), (p1, p2) =>
+    tag(add_poly(p1, negate_poly(p2))),
+  );
+  put('mul', list('polynomial', 'polynomial'), (p1, p2) =>
+    tag(mul_poly(p1, p2)),
+  );
+  put('make', 'polynomial', (variable, terms) =>
+    tag(make_poly(variable, terms)),
+  );
+  put('variable', list('polynomial'), variable);
+  put('neg', list('polynomial'), (p) => tag(negate_poly(p)));
+}
+
+//############################################################################//
+//                                                                            //
+//                                term package                                //
+//                                                                            //
+//############################################################################//
+
+function install_term_package(put, get, apply_generic) {
+  const generic_negate = (x) => apply_generic('neg', list(x));
+  const tag = (p) => attach_tag('term', p);
+  const list_tag = (p) => attach_tag('term_list', p);
+
+  const is_equal_to_zero = (x) => apply_generic('is_equal_to_zero', list(x));
+
+  const add = (x, y) => apply_generic('add', list(x, y));
+  const mul = (x, y) => apply_generic('mul', list(x, y));
+
+  const make_term = (order, coeff) => tag(list(order, coeff));
+  const order = (term) => head(contents(term));
+  const coeff = (term) => head(tail(contents(term)));
+  const negate_term = (t) => make_term(order(t), generic_negate(coeff(t)));
+  const negate_term_list = (L) =>
+    list_tag(map((t) => make_term(order(t), generic_negate(coeff(t))), L));
+
+  const first_term = head;
+  const rest_terms = tail;
+  const the_empty_termlist = null;
+  const is_empty_termlist = is_null;
+
+  const adjoin_term = (term, term_list) =>
+    is_equal_to_zero(coeff(term)) ? term_list : pair(term, term_list);
 
   function add_terms(L1, L2) {
     if (is_empty_termlist(L1)) {
@@ -398,10 +443,7 @@ function install_polynomial_package(put, get, apply_generic) {
       );
     }
   }
-  const mul_poly = (p1, p2) =>
-    is_same_variable(variable(p1), variable(p2)) ?
-      make_poly(variable(p1), mul_terms(term_list(p1), term_list(p2)))
-    : error(list(p1, p2), 'polys not in same var -- mul_poly');
+
   const mul_terms = (L1, L2) =>
     is_empty_termlist(L1) ? the_empty_termlist : (
       add_terms(
@@ -409,47 +451,89 @@ function install_polynomial_package(put, get, apply_generic) {
         mul_terms(rest_terms(L1), L2),
       )
     );
+
   function mul_term_by_all_terms(t1, L) {
     if (is_empty_termlist(L)) {
       return the_empty_termlist;
     } else {
       const t2 = first_term(L);
       return adjoin_term(
-        make_term(order(t1) + order(t2), mul(coeff(t1), coeff(t2))),
+        make_term(
+          order(t1) + order(t2),
+          mul(coeff(t1), coeff(t2)),
+          type_tag(t2),
+        ),
         mul_term_by_all_terms(t1, rest_terms(L)),
       );
     }
   }
 
-  const tag = (p) => attach_tag('polynomial', p);
-  put('add', list('polynomial', 'polynomial'), (p1, p2) =>
-    tag(add_poly(p1, p2)),
+  put('neg', list('term'), negate_term);
+  put('neg', list('term_list'), negate_term_list);
+  put('make', 'term', (order, coeff) => make_term(order, coeff));
+  put('make', 'term_list', (L) => list_tag(L));
+  put('mul', list('term_list', 'term_list'), (L1, L2) =>
+    list_tag(mul_terms(L1, L2)),
   );
-  put('mul', list('polynomial', 'polynomial'), (p1, p2) =>
-    tag(mul_poly(p1, p2)),
-  );
-  put('make', 'polynomial', (variable, terms) =>
-    tag(make_poly(variable, terms)),
-  );
-  put('make_term', 'polynomial', (order, coeff) =>
-    tag(make_term(order, coeff)),
+  put('add', list('term_list', 'term_list'), (L1, L2) =>
+    list_tag(add_terms(L1, L2)),
   );
 }
 
 //############################################################################//
 //                                                                            //
-//                              negation package                              //
+//                             dense term package                             //
 //                                                                            //
 //############################################################################//
 
-function install_negation_package(put, get, apply_generic) {
-  const real_part = (z) => apply_generic('real_part', list(z));
-  const numer = (x) => get('numer', 'rational')(x);
-  const make_integer = (x) => get('make', 'integer')(x);
+function install_dense_term_package(put, get, apply_generic) {
+  const generic_negate = (x) => apply_generic('neg', list(x));
+  const tag = (p) => attach_tag('dense_term', p);
+  const list_tag = (p) => attach_tag('dense_term_list', p);
 
-  put('project', list('complex'), (z) => real_part(z));
-  put('project', list('real'), (x) => make_integer(math_round(x)));
-  put('project', list('rational'), (x) => make_integer(numer(x)));
+  const is_equal_to_zero = (x) => apply_generic('is_equal_to_zero', list(x));
+
+  const add = (x, y) => apply_generic('add', list(x, y));
+  // const mul = (x, y) => apply_generic('mul', list(x, y));
+
+  const make_term = (coeff) => tag(coeff);
+  const coeff = contents;
+  const negate_term = (t) => make_term(generic_negate(coeff(t)));
+  const negate_term_list = (L) =>
+    list_tag(map((t) => make_term(generic_negate(coeff(t))), L));
+
+  const first_term = head;
+  const rest_terms = tail;
+  const the_empty_termlist = null;
+  const is_empty_termlist = is_null;
+
+  const adjoin_term = pair;
+
+  function add_terms(L1, L2) {
+    if (is_empty_termlist(L1)) {
+      return L2;
+    } else if (is_empty_termlist(L2)) {
+      return L1;
+    } else {
+      const t1 = first_term(L1);
+      const t2 = first_term(L2);
+      return adjoin_term(
+        make_term(add(coeff(t1), coeff(t2))),
+        add_terms(rest_terms(L1), rest_terms(L2)),
+      );
+    }
+  }
+
+  put('neg', list('dense_term_list'), negate_term_list);
+  put('make', 'dense_term', make_term);
+  put('make', 'dense_term_list', (L) => list_tag(L));
+  put('mul', list('dense_term_list', 'dense_term_list'), (L1, L2) =>
+    error(list(L1, L2), 'multiplication not possible in this form'),
+  );
+  put('add', list('dense_term_list', 'dense_term_list'), (L1, L2) =>
+    list_tag(add_terms(L1, L2)),
+  );
+  put('neg', list('dense_term'), negate_term);
 }
 
 export {
@@ -466,4 +550,6 @@ export {
   install_sin_cos_package,
   install_polynomial_package,
   install_is_equal_package,
+  install_term_package,
+  install_dense_term_package,
 };
