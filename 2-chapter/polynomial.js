@@ -6,10 +6,6 @@ import {
   error,
   map,
   display,
-  is_null,
-  tail,
-  length,
-  math_PI,
 } from 'sicp';
 
 import {
@@ -23,7 +19,7 @@ import {
 } from './arithmetic-packages.js';
 
 import { get, put, type_tag, contents } from './table-helper.js';
-import { reduce } from './helper.js';
+import { list_to_array, reduce, sort_list } from './helper.js';
 
 //############################################################################//
 //                                                                            //
@@ -36,6 +32,10 @@ const mul = (x, y) => apply_generic('mul', list(x, y));
 const sub = (x, y) => apply_generic('sub', list(x, y));
 const div = (x, y) => apply_generic('div', list(x, y));
 const negate = (x) => apply_generic('neg', list(x));
+
+const sort = (x) => apply_generic('sort', list(x));
+const simplify = (x) => apply_generic('simplify', list(x));
+const get_dominant = (x) => apply_generic('get_dominant', list(x));
 
 const is_equal = (x, y) => apply_generic('is_equal', list(x, y));
 const is_equal_to_zero = (x) => apply_generic('is_equal_to_zero', list(x));
@@ -91,17 +91,17 @@ function apply_generic(op, args) {
 
 //############################################################################//
 //                                                                            //
-//                                    test                                    //
+//                                    tests                                   //
 //                                                                            //
 //############################################################################//
 
 const p1 = make_polynomial(
   'x',
-  make_term_list(list(make_term(2, make_real(2)))),
+  make_term_list(list(make_term(5, make_real(1)), make_term(0, make_real(-1)))),
 );
 const p2 = make_polynomial(
   'x',
-  make_term_list(list(make_term(2, make_real(5)))),
+  make_term_list(list(make_term(2, make_real(1)), make_term(0, make_real(-1)))),
 );
 const p3 = negate(p2);
 const z1 = make_polynomial('z', make_term_list(list(make_term(3, p1))));
@@ -112,9 +112,9 @@ const p4 = make_polynomial(
   'a',
   make_term_list(
     list(
-      make_term(0, make_real(10)),
+      make_term(5, make_real(1)),
       make_term(1, make_real(4.5)),
-      make_term(2, make_real(1)),
+      make_term(0, make_real(10)),
     ),
   ),
 );
@@ -123,25 +123,9 @@ const p5 = make_polynomial(
   'a',
   make_term_list(
     list(
-      make_term(0, make_real(5)),
-      make_term(1, make_real(2)),
       make_term(2, make_real(3)),
-    ),
-  ),
-);
-
-const a1 = make_polynomial(
-  'x',
-  make_dense_term_list(list(make_dense_term(make_real(2)))),
-);
-
-const a2 = make_polynomial(
-  'x',
-  make_dense_term_list(
-    list(
-      make_dense_term(make_real(1)),
-      make_dense_term(make_real(2)),
-      make_dense_term(make_real(4)),
+      make_term(1, make_real(2)),
+      make_term(0, make_real(5)),
     ),
   ),
 );
@@ -149,13 +133,155 @@ const a2 = make_polynomial(
 try {
   add(p4, p5);
   add(p1, p2);
+} catch (error) {
+  display(error, 'addition tests failed');
+}
+try {
   add(z1, z2);
+} catch (error) {
+  display(error, 'addition where coeffs are polys tests failed');
+}
+try {
   mul(p1, p2);
   mul(z1, z2);
+} catch (error) {
+  display(error, 'multiplication tests failed');
+}
+try {
   sub(p1, p2);
   sub(z1, z2);
-  add(a1, a2);
-  sub(a1, a2);
 } catch (error) {
-  display(error, 'Tests failed');
+  display(error, 'subtraction tests failed');
 }
+try {
+  div(p1, p2);
+  div(p4, p5);
+} catch (error) {
+  display(error, 'division tests failed');
+}
+
+// simplify if order same add coeffs (sort beforehand)
+// -------------- progress ------------------
+
+// sort main variables
+// flip lower rank var with higher rank var and simplify
+// define term plus poly
+// define poly x plus poly y -> flip to higher rank x^0 plus other poly
+// define term mul poly
+// simple test cases
+// take a break :)
+
+const unordered = make_polynomial(
+  'x',
+  make_term_list(
+    list(
+      make_term(2, make_real(3)),
+      make_term(0, make_real(2)),
+      make_term(0, make_real(5)),
+    ),
+  ),
+);
+
+// w*x*y^2
+const case1 = make_polynomial(
+  'y',
+  make_term_list(
+    list(
+      make_term(
+        2,
+        make_polynomial(
+          'x',
+          make_term_list(
+            list(
+              make_term(
+                1,
+                make_polynomial(
+                  'w',
+                  make_term_list(list(make_term(1, make_real(1)))),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  ),
+);
+
+// xy^2 + xy + x + x^2 + 3x + 2
+const case2 = make_polynomial(
+  'y',
+  make_term_list(
+    list(
+      // y^2 term
+      make_term(
+        2,
+        make_polynomial('x', make_term_list(list(make_term(1, make_real(1))))),
+      ),
+      // y^1 term
+      make_term(
+        1,
+        make_polynomial('x', make_term_list(list(make_term(1, make_real(1))))),
+      ),
+      // y^0 terms
+      make_term(
+        0,
+        make_polynomial(
+          'x',
+          make_term_list(
+            list(
+              make_term(2, make_real(1)), // x^2
+            ),
+          ),
+        ),
+      ),
+      make_term(
+        0,
+        make_polynomial(
+          'x',
+          make_term_list(
+            list(
+              make_term(1, make_real(3)), // 3x
+            ),
+          ),
+        ),
+      ),
+      make_term(
+        0,
+        make_polynomial(
+          'x',
+          make_term_list(
+            list(
+              make_term(1, make_real(1)), // x
+            ),
+          ),
+        ),
+      ),
+      make_term(0, make_real(2)),
+    ),
+  ),
+);
+
+// x*y^2
+const simple_case = make_polynomial(
+  'z',
+  make_term_list(
+    list(
+      make_term(
+        2,
+        make_polynomial('y', make_term_list(list(make_term(1, make_real(1))))),
+      ),
+      make_term(
+        1,
+        make_polynomial('x', make_term_list(list(make_term(1, make_real(1))))),
+      ),
+    ),
+  ),
+);
+
+const p = make_polynomial(
+  'x',
+  make_term_list(list(make_term(1, make_real(1)), make_term(2, make_real(1)))),
+);
+
+display(get_dominant(simple_case));
