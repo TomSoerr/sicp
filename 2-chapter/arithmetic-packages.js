@@ -16,7 +16,7 @@ import {
 } from 'sicp';
 
 import { attach_tag, type_tag, contents } from './table-helper.js';
-import { reduce } from './helper.js';
+import { reduce, sort_list, list_to_array } from './helper.js';
 
 //############################################################################//
 //                                                                            //
@@ -80,6 +80,7 @@ function install_real_package(put, get) {
   put('div', list('real', 'real'), (x, y) => tag(x / y));
   put('make', 'real', (x) => tag(x));
   put('neg', list('real'), (x) => tag(-1 * x));
+  put('get_dominant', list('real'), (t) => tag(t));
   return 'real';
 }
 
@@ -354,8 +355,17 @@ function install_polynomial_package(put, get, apply_generic) {
 
   const add = (x, y) => apply_generic('add', list(x, y));
   const mul = (x, y) => apply_generic('mul', list(x, y));
+  const div = (x, y) => apply_generic('div', list(x, y));
+
+  const is_equal = (x, y) => apply_generic('is_equal', list(x, y));
+  const sort = (x) => apply_generic('sort', list(x));
+  const simplify = (x) => apply_generic('simplify', list(x));
+  const get_dominant = (x) => apply_generic('get_dominant', list(x));
+  const get_dominant_var = (x) => apply_generic('get_dominant_var', list(x));
+  const flip = (a1, a2, l) => apply_generic('flip', list(a1, a2, l));
 
   const tag = (p) => attach_tag('polynomial', p);
+  const arg = (p) => attach_tag('arg', p);
 
   const is_variable = is_string;
   const is_same_variable = (v1, v2) =>
@@ -378,6 +388,57 @@ function install_polynomial_package(put, get, apply_generic) {
   const negate_poly = (p) =>
     make_poly(variable(p), generic_negate(term_list(p)));
 
+  const div_poly = (p1, p2) =>
+    is_same_variable(variable(p1), variable(p2)) ?
+      make_poly(variable(p1), div(term_list(p1), term_list(p2)))
+    : error(list(p1, p2), 'polys not in same var -- div_poly');
+
+  function sort_poly(p) {
+    return make_poly(variable(p), sort(term_list(p)));
+  }
+
+  function simplify_poly(p) {
+    return make_poly(variable(p), simplify(term_list(p)));
+  }
+
+  function is_equal_poly(p1, p2) {
+    return (
+      is_null(p1) ? is_null(p2)
+      : is_null(p2) ? is_null(p1)
+      : is_same_variable(variable(p1), variable(p2)) &&
+        is_equal(term_list(p1), term_list(p2))
+    );
+  }
+
+  // recursively get the dominant variable
+
+  function dominant_poly(p) {
+    function sort(last, current) {
+      if (is_equal(last, current)) {
+        return contents(current);
+      }
+
+      const curr_var = variable(contents(current));
+
+      const new_poly = tag(
+        make_poly(curr_var, get_dominant(term_list(contents(current)))),
+      );
+      // if has_dominant_term
+      // flip whole term list
+
+      const dominant_var = get_dominant_var(term_list(contents(new_poly)));
+      if (dominant_var && var_order(dominant_var) > var_order(curr_var)) {
+        const flipped = make_poly(
+          dominant_var,
+          flip(arg(curr_var), arg(dominant_var), term_list(contents(new_poly))),
+        );
+        return sort(current, flipped);
+      }
+      return sort(current, new_poly);
+    }
+    return sort(tag(null), tag(p));
+  }
+
   put('add', list('polynomial', 'polynomial'), (p1, p2) =>
     tag(add_poly(p1, p2)),
   );
@@ -387,11 +448,18 @@ function install_polynomial_package(put, get, apply_generic) {
   put('mul', list('polynomial', 'polynomial'), (p1, p2) =>
     tag(mul_poly(p1, p2)),
   );
+  put('div', list('polynomial', 'polynomial'), (p1, p2) =>
+    tag(div_poly(p1, p2)),
+  );
   put('make', 'polynomial', (variable, terms) =>
     tag(make_poly(variable, terms)),
   );
   put('variable', list('polynomial'), variable);
   put('neg', list('polynomial'), (p) => tag(negate_poly(p)));
+  put('sort', list('polynomial'), (p) => tag(sort_poly(p)));
+  put('simplify', list('polynomial'), (p) => tag(simplify_poly(p)));
+  put('is_equal', list('polynomial', 'polynomial'), is_equal_poly);
+  put('get_dominant', list('polynomial'), (p) => tag(dominant_poly(p)));
 }
 
 //############################################################################//
@@ -400,15 +468,27 @@ function install_polynomial_package(put, get, apply_generic) {
 //                                                                            //
 //############################################################################//
 
+function var_order(v) {
+  return (
+    v === 'x' ? 3
+    : v === 'y' ? 2
+    : v === 'z' ? 1
+    : error(v, 'unknown variable')
+  );
+}
+
 function install_term_package(put, get, apply_generic) {
   const generic_negate = (x) => apply_generic('neg', list(x));
   const tag = (p) => attach_tag('term', p);
   const list_tag = (p) => attach_tag('term_list', p);
 
   const is_equal_to_zero = (x) => apply_generic('is_equal_to_zero', list(x));
+  const is_equal = (x, y) => apply_generic('is_equal', list(x, y));
+  const get_dominant = (x) => apply_generic('get_dominant', list(x));
 
   const add = (x, y) => apply_generic('add', list(x, y));
   const mul = (x, y) => apply_generic('mul', list(x, y));
+  const div = (x, y) => apply_generic('div', list(x, y));
 
   const make_term = (order, coeff) => tag(list(order, coeff));
   const order = (term) => head(contents(term));
@@ -468,6 +548,115 @@ function install_term_package(put, get, apply_generic) {
     }
   }
 
+  // long division
+
+  function div_terms(L1, L2) {
+    if (is_empty_termlist(L1)) {
+      return list(the_empty_termlist, the_empty_termlist);
+    } else {
+      const t1 = first_term(L1);
+      const t2 = first_term(L2);
+      if (order(t2) > order(t1)) {
+        return list(the_empty_termlist, L1);
+      } else {
+        const new_c = div(coeff(t1), coeff(t2));
+        const new_o = order(t1) - order(t2);
+        const new_term = make_term(new_o, new_c);
+
+        const new_term_list = add_terms(
+          L1,
+          contents(negate_term_list(mul_terms(list(new_term), L2))),
+        );
+        const rest_of_result = div_terms(new_term_list, L2);
+        return pair(head(new_term_list), rest_of_result);
+      }
+    }
+  }
+
+  // lex ordering
+
+  function sort_term_list(L) {
+    const compare = (i1, i2) =>
+      order(i1) > order(i2) ? 1
+      : order(i1) < order(i2) ? -1
+      : order(i1) === order(i2) ? 0
+      : error(list(i1, i2), 'error while comparing terms');
+
+    return sort_list(compare, L);
+  }
+
+  // simplify term_list
+
+  function simplify_term_list(L1) {
+    return sort_term_list(
+      reduce(
+        (prev, curr) =>
+          is_null(prev) ? pair(curr, null)
+          : order(head(prev)) === order(curr) ?
+            pair(
+              make_term(order(curr), add(coeff(head(prev)), coeff(curr))),
+              tail(prev),
+            )
+          : pair(curr, prev),
+        null,
+        sort_term_list(L1),
+      ),
+    );
+  }
+
+  // get dominant
+
+  function get_dominant_term_list(L) {
+    return map((t) => make_term(order(t), get_dominant(coeff(t))), L);
+  }
+
+  function get_dominant_var(L) {
+    function redu(prev, curr) {
+      if (prev === false || type_tag(coeff(prev)) !== 'polynomial') return curr;
+
+      if (type_tag(coeff(prev)) === 'polynomial') {
+        return (
+            var_order(head(contents(coeff(curr)))) >
+              var_order(head(contents(coeff(prev))))
+          ) ?
+            curr
+          : prev;
+      }
+      return prev;
+    }
+    const res = reduce(redu, false, L);
+    return type_tag(coeff(res)) === 'polynomial' ?
+        head(contents(coeff(res)))
+      : false;
+  }
+
+  function flip(curr_var, dominant_var, terms) {
+    debugger;
+    // get terms without x
+    // create dom_var with order 0 term where all terms without x get as term_list for ploy with curr_var
+    // get poly's with x -> get term lists
+    // append both
+    // create term_list and run sort
+  }
+
+  // is equal
+
+  function is_equal_term_list(L1, L2) {
+    return (
+      is_null(L1) ? is_null(L2)
+      : is_null(L2) ? is_null(L1)
+      : is_equal(head(L1), head(L2)) && is_equal_term_list(tail(L1), tail(L2))
+    );
+  }
+
+  function is_equal_term(t1, t2) {
+    return (
+      order(tag(t1)) === order(tag(t2)) &&
+      type_tag(coeff(tag(t1))) === type_tag(coeff(tag(t2))) &&
+      is_equal(coeff(tag(t1)), coeff(tag(t2)))
+    );
+  }
+
   put('neg', list('term'), negate_term);
   put('neg', list('term_list'), negate_term_list);
   put('make', 'term', (order, coeff) => make_term(order, coeff));
@@ -475,8 +664,22 @@ function install_term_package(put, get, apply_generic) {
   put('mul', list('term_list', 'term_list'), (L1, L2) =>
     list_tag(mul_terms(L1, L2)),
   );
+  put('div', list('term_list', 'term_list'), (L1, L2) =>
+    list_tag(div_terms(L1, L2)),
+  );
   put('add', list('term_list', 'term_list'), (L1, L2) =>
     list_tag(add_terms(L1, L2)),
+  );
+  put('sort', list('term_list'), (L1) => list_tag(sort_term_list(L1)));
+  put('simplify', list('term_list'), (L1) => list_tag(simplify_term_list(L1)));
+  put('is_equal', list('term_list', 'term_list'), is_equal_term_list);
+  put('is_equal', list('term', 'term'), is_equal_term);
+  put('get_dominant', list('term_list'), (p) =>
+    list_tag(get_dominant_term_list(p)),
+  );
+  put('get_dominant_var', list('term_list'), (L) => get_dominant_var(L));
+  put('flip', list('arg', 'arg', 'term_list'), (a1, a2, L) =>
+    list_tag(flip(a1, a2, L)),
   );
 }
 
