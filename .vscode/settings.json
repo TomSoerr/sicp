@@ -1,6 +1,0 @@
-{
-  "prettier.prettierPath": "~/.nvm/versions/node/v22.13.0/lib/node_modules/prettier",
-  "cSpell.words": [
-    "sicp"
-  ]
-}
