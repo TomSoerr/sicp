@@ -1,6 +1,5 @@
 node_modules
 **/settings.json
-.vscode/settings.json
 .DS_Store
 **/.DS_Store
 **/tmp.js
