@@ -13,6 +13,7 @@ import {
   is_null,
   is_string,
   map,
+  append,
 } from 'sicp';
 
 import { attach_tag, type_tag, contents } from './table-helper.js';
@@ -423,17 +424,24 @@ function install_polynomial_package(put, get, apply_generic) {
       const new_poly = tag(
         make_poly(curr_var, get_dominant(term_list(contents(current)))),
       );
-      // if has_dominant_term
-      // flip whole term list
 
       const dominant_var = get_dominant_var(term_list(contents(new_poly)));
+
       if (dominant_var && var_order(dominant_var) > var_order(curr_var)) {
-        const flipped = make_poly(
-          dominant_var,
-          flip(arg(curr_var), arg(dominant_var), term_list(contents(new_poly))),
+        const flipped = tag(
+          make_poly(
+            dominant_var,
+            flip(
+              arg(curr_var),
+              arg(dominant_var),
+              term_list(contents(new_poly)),
+            ),
+          ),
         );
+
         return sort(current, flipped);
       }
+
       return sort(current, new_poly);
     }
     return sort(tag(null), tag(p));
@@ -485,6 +493,9 @@ function install_term_package(put, get, apply_generic) {
   const is_equal_to_zero = (x) => apply_generic('is_equal_to_zero', list(x));
   const is_equal = (x, y) => apply_generic('is_equal', list(x, y));
   const get_dominant = (x) => apply_generic('get_dominant', list(x));
+  const make_polynomial = (variable, terms) =>
+    get('make', 'polynomial')(variable, terms);
+  const make_real = (n) => get('make', 'real')(n);
 
   const add = (x, y) => apply_generic('add', list(x, y));
   const mul = (x, y) => apply_generic('mul', list(x, y));
@@ -614,7 +625,7 @@ function install_term_package(put, get, apply_generic) {
     function redu(prev, curr) {
       if (prev === false || type_tag(coeff(prev)) !== 'polynomial') return curr;
 
-      if (type_tag(coeff(prev)) === 'polynomial') {
+      if (type_tag(coeff(curr)) === 'polynomial') {
         return (
             var_order(head(contents(coeff(curr)))) >
               var_order(head(contents(coeff(prev))))
@@ -631,12 +642,64 @@ function install_term_package(put, get, apply_generic) {
   }
 
   function flip(curr_var, dominant_var, terms) {
-    debugger;
-    // get terms without x
-    // create dom_var with order 0 term where all terms without x get as term_list for ploy with curr_var
-    // get poly's with x -> get term lists
-    // append both
-    // create term_list and run sort
+    function filter(prev, term) {
+      const with_dom_var = head(prev);
+      const without_dom_var = tail(prev);
+
+      const term_tag = type_tag(coeff(term));
+
+      if (term_tag === 'polynomial') {
+        const term_var = head(contents(coeff(term)));
+        if (term_var === dominant_var) {
+          return pair(pair(term, with_dom_var), without_dom_var);
+        }
+      }
+
+      return pair(with_dom_var, pair(term, without_dom_var));
+    }
+
+    const filtered_terms = reduce(filter, pair(null, null), terms);
+    const with_dom_var = head(filtered_terms);
+    const without_dom_var = tail(filtered_terms);
+
+    const rest_list =
+      is_null(without_dom_var) ? null : (
+        make_term(0, make_polynomial(curr_var, list_tag(without_dom_var)))
+      );
+
+    // could be several terms with dominant var
+    function redu_result(other_terms, term) {
+      const result_term = (o, c) =>
+        make_term(
+          o,
+          make_polynomial(curr_var, list_tag(list(make_term(order(term), c)))),
+        );
+
+      // each poly could have several terms
+      const term_list = contents(tail(tail(coeff(term))));
+
+      const flipped_terms = reduce(
+        (other_sub_terms, sub_term) => {
+          const o = order(sub_term);
+          const c = coeff(sub_term);
+
+          return pair(result_term(o, c), other_sub_terms);
+        },
+        null,
+        term_list,
+      );
+      return append(flipped_terms, other_terms);
+    }
+
+    const result_list =
+      is_null(with_dom_var) ? null : reduce(redu_result, null, with_dom_var);
+
+    const result =
+      is_null(result_list) ? rest_list
+      : is_null(rest_list) ? result_list
+      : append(result_list, list(rest_list));
+
+    return sort_term_list(result);
   }
 
   // is equal

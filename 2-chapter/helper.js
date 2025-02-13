@@ -30,7 +30,6 @@ function $list_to_array(l, arr) {
 
 /**
  * @param {*} l - list
- * @returns
  */
 function list_to_array(l) {
   return $list_to_array(l, []);
