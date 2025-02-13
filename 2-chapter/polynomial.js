@@ -130,35 +130,35 @@ const p5 = make_polynomial(
   ),
 );
 
-try {
-  add(p4, p5);
-  add(p1, p2);
-} catch (error) {
-  display(error, 'addition tests failed');
-}
-try {
-  add(z1, z2);
-} catch (error) {
-  display(error, 'addition where coeffs are polys tests failed');
-}
-try {
-  mul(p1, p2);
-  mul(z1, z2);
-} catch (error) {
-  display(error, 'multiplication tests failed');
-}
-try {
-  sub(p1, p2);
-  sub(z1, z2);
-} catch (error) {
-  display(error, 'subtraction tests failed');
-}
-try {
-  div(p1, p2);
-  div(p4, p5);
-} catch (error) {
-  display(error, 'division tests failed');
-}
+// try {
+//   add(p4, p5);
+//   add(p1, p2);
+// } catch (error) {
+//   display(error, 'addition tests failed');
+// }
+// try {
+//   add(z1, z2);
+// } catch (error) {
+//   display(error, 'addition where coeffs are polys tests failed');
+// }
+// try {
+//   mul(p1, p2);
+//   mul(z1, z2);
+// } catch (error) {
+//   display(error, 'multiplication tests failed');
+// }
+// try {
+//   sub(p1, p2);
+//   sub(z1, z2);
+// } catch (error) {
+//   display(error, 'subtraction tests failed');
+// }
+// try {
+//   div(p1, p2);
+//   div(p4, p5);
+// } catch (error) {
+//   display(error, 'division tests failed');
+// }
 
 // simplify if order same add coeffs (sort beforehand)
 // -------------- progress ------------------
@@ -170,17 +170,6 @@ try {
 // define term mul poly
 // simple test cases
 // take a break :)
-
-const unordered = make_polynomial(
-  'x',
-  make_term_list(
-    list(
-      make_term(2, make_real(3)),
-      make_term(0, make_real(2)),
-      make_term(0, make_real(5)),
-    ),
-  ),
-);
 
 // x*z*y^2
 const case1 = make_polynomial(
@@ -257,9 +246,72 @@ const case2 = make_polynomial(
           ),
         ),
       ),
-      make_term(0, make_real(2)),
+      make_term(0, make_real(2)), // 2
     ),
   ),
 );
 
-display(get_dominant(case2));
+// 2x + x^2
+const case3_1 = make_polynomial(
+  'x',
+  make_term_list(
+    list(
+      make_term(2, make_real(1)), // x^2
+      make_term(1, make_real(2)), // 2x
+    ),
+  ),
+);
+
+// 5y^4 + y^5
+const case3_2 = make_polynomial(
+  'y',
+  make_term_list(
+    list(
+      make_term(5, make_real(1)), // y^5
+      make_term(4, make_real(5)), // 5y^4
+    ),
+  ),
+);
+
+display(add(case3_1, case3_2));
+
+// [
+//   'polynomial',
+//   [
+//     'x',
+//     [
+//       'term_list',
+//       [
+//         ['term', [2, [['real', 1], null]]],
+//         [
+//           ['term', [1, [['real', 2], null]]],
+//           [
+//             [
+//               'term',
+//               [
+//                 0,
+//                 [
+//                   [
+//                     'polynomial',
+//                     [
+//                       'y',
+//                       [
+//                         'term_list',
+//                         [
+//                           ['term', [4, [['real', 5], null]]],
+//                           [['term', [5, [['real', 1], null]]], null],
+//                         ],
+//                       ],
+//                     ],
+//                   ],
+//                   null,
+//                 ],
+//               ],
+//             ],
+//             null,
+//           ],
+//         ],
+//       ],
+//     ],
+//   ],
+// ];

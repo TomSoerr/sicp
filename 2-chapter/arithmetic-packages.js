@@ -373,14 +373,25 @@ function install_polynomial_package(put, get, apply_generic) {
     is_variable(v1) && is_variable(v2) && v1 === v2;
 
   const make_poly = (variable, term_list) => pair(variable, term_list);
+  const make_term_list = (l) => get('make', 'term_list')(l);
+  const make_term = (order, coeff) => get('make', 'term')(order, coeff);
   const variable = head;
   const term_list = tail;
 
-  const add_poly = (p1, p2) =>
-    is_same_variable(variable(p1), variable(p2)) ?
-      make_poly(variable(p1), add(term_list(p1), term_list(p2)))
-    : error(list(p1, p2), 'polys not in same var -- add_poly');
+  const add_poly = (p1, p2) => {
+    if (is_same_variable(variable(p1), variable(p2))) {
+      return make_poly(variable(p1), add(term_list(p1), term_list(p2)));
+    }
 
+    if (var_order(variable(p1)) > var_order(variable(p2))) {
+      const p2_flipped = make_poly(
+        variable(p1),
+        flip(arg(variable(p2)), arg(variable(p1)), term_list(p2)),
+      );
+      return add_poly(p1, p2_flipped);
+    }
+    error(list(p1, p2), 'polys not in same var -- add_poly');
+  };
   const mul_poly = (p1, p2) =>
     is_same_variable(variable(p1), variable(p2)) ?
       make_poly(variable(p1), mul(term_list(p1), term_list(p2)))
@@ -446,6 +457,13 @@ function install_polynomial_package(put, get, apply_generic) {
     }
     return sort(tag(null), tag(p));
   }
+
+  // function add_poly_term(p, t) {
+  //   return add_poly(
+  //     p,
+  //     contents(make_poly(variable(p), make_term_list(list(make_term(0))))),
+  //   );
+  // }
 
   put('add', list('polynomial', 'polynomial'), (p1, p2) =>
     tag(add_poly(p1, p2)),
@@ -688,6 +706,7 @@ function install_term_package(put, get, apply_generic) {
         null,
         term_list,
       );
+
       return append(flipped_terms, other_terms);
     }
 
@@ -695,11 +714,11 @@ function install_term_package(put, get, apply_generic) {
       is_null(with_dom_var) ? null : reduce(redu_result, null, with_dom_var);
 
     const result =
-      is_null(result_list) ? rest_list
+      is_null(result_list) ? list(rest_list)
       : is_null(rest_list) ? result_list
       : append(result_list, list(rest_list));
 
-    return sort_term_list(result);
+    return result;
   }
 
   // is equal
