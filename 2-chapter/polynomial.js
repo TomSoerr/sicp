@@ -182,7 +182,7 @@ const unordered = make_polynomial(
   ),
 );
 
-// w*x*y^2
+// x*z*y^2
 const case1 = make_polynomial(
   'y',
   make_term_list(
@@ -190,13 +190,13 @@ const case1 = make_polynomial(
       make_term(
         2,
         make_polynomial(
-          'x',
+          'z',
           make_term_list(
             list(
               make_term(
                 1,
                 make_polynomial(
-                  'w',
+                  'x',
                   make_term_list(list(make_term(1, make_real(1)))),
                 ),
               ),
@@ -262,26 +262,4 @@ const case2 = make_polynomial(
   ),
 );
 
-// x*y^2
-const simple_case = make_polynomial(
-  'z',
-  make_term_list(
-    list(
-      make_term(
-        2,
-        make_polynomial('y', make_term_list(list(make_term(1, make_real(1))))),
-      ),
-      make_term(
-        1,
-        make_polynomial('x', make_term_list(list(make_term(1, make_real(1))))),
-      ),
-    ),
-  ),
-);
-
-const p = make_polynomial(
-  'x',
-  make_term_list(list(make_term(1, make_real(1)), make_term(2, make_real(1)))),
-);
-
-display(get_dominant(simple_case));
+display(get_dominant(case2));
