@@ -17,7 +17,7 @@ import {
 } from 'sicp';
 
 import { attach_tag, type_tag, contents } from './table-helper.js';
-import { reduce, sort_list, list_to_array } from './helper.js';
+import { reduce, sort_list, l_to_arr, tl_to_arr } from './helper.js';
 
 //############################################################################//
 //                                                                            //
@@ -32,13 +32,15 @@ function install_rational_package(put, get, apply_generic) {
   const div = (x, y) => apply_generic('div', list(x, y));
   const gcd = (x, y) => apply_generic('gcd', list(x, y));
   const make_real = (n) => get('make', 'real')(n);
-  const gcd_rational = (a, b) => (b === 0 ? make_real(a) : gcd(b, a % b));
+
+  const generic_reduce = (n, d, g) => apply_generic('reduce', list(n, d, g));
 
   const numer = (x) => head(x);
   const denom = (x) => tail(x);
+
   const make_rat = (n, d) => {
     const g = gcd(n, d);
-    return pair(div(n, g), div(d, g));
+    return generic_reduce(n, d, g);
   };
 
   const add_rat = (x, y) =>
@@ -61,7 +63,6 @@ function install_rational_package(put, get, apply_generic) {
   put('sub', list('rational', 'rational'), (x, y) => tag(sub_rat(x, y)));
   put('mul', list('rational', 'rational'), (x, y) => tag(mul_rat(x, y)));
   put('div', list('rational', 'rational'), (x, y) => tag(div_rat(x, y)));
-  put('gcd', list('rational', 'rational'), (x, y) => gcd_rational(x, y));
   put('denom', 'rational', (x) => denom(x));
   put('numer', 'rational', (x) => numer(x));
   put('make', 'rational', (n, d) => tag(make_rat(n, d)));
@@ -76,13 +77,19 @@ function install_rational_package(put, get, apply_generic) {
 
 function install_real_package(put, get) {
   const tag = (x) => attach_tag('real', x);
+  const reduce_rational = (n, d, g) => pair(tag(n / g), tag(d / g));
+  const gcd_real = (a, b) => (b === 0 ? tag(a) : gcd_real(b, a % b));
+
+  put('gcd', list('real', 'real'), (x, y) => gcd_real(x, y));
   put('add', list('real', 'real'), (x, y) => tag(x + y));
   put('sub', list('real', 'real'), (x, y) => tag(x - y));
   put('mul', list('real', 'real'), (x, y) => tag(x * y));
   put('div', list('real', 'real'), (x, y) => tag(x / y));
   put('make', 'real', (x) => tag(x));
   put('neg', list('real'), (x) => tag(-1 * x));
-  put('get_dominant', list('real'), (t) => tag(t));
+  put('reduce', list('real', 'real', 'real'), (d, n, g) =>
+    reduce_rational(d, n, g),
+  );
   return 'real';
 }
 
@@ -139,9 +146,11 @@ function install_polynomial_package(put, get, apply_generic) {
   const div = (x, y) => apply_generic('div', list(x, y));
   const is_equal = (x, y) => apply_generic('is_equal', list(x, y));
   const gcd = (x, y) => apply_generic('gcd', list(x, y));
+  const div_cut = (x, y) => apply_generic('div_cut', list(x, y));
 
   const sort = (x) => apply_generic('sort', list(x));
   const simplify = (x) => apply_generic('simplify', list(x));
+  const generic_reduce = (n, d, g) => apply_generic('reduce', list(n, d, g));
 
   const tag = (p) => attach_tag('polynomial', p);
 
@@ -191,7 +200,28 @@ function install_polynomial_package(put, get, apply_generic) {
   const gcd_poly = (p1, p2) =>
     is_same_variable(variable(p1), variable(p2)) ?
       make_poly(variable(p1), gcd(term_list(p1), term_list(p2)))
-    : error(list(p1, p2), 'polys not in same var -- gcd_poly');
+    : tag(null);
+
+  function reduce_poly(n, d, g) {
+    if (!is_same_variable(variable(n), variable(d)))
+      return pair(tag(n), tag(d));
+
+    const vari = variable(n);
+
+    const reduced_terms = generic_reduce(
+      term_list(n),
+      term_list(d),
+      term_list(g),
+    );
+    const num = make_poly(vari, head(reduced_terms));
+    const den = make_poly(vari, tail(reduced_terms));
+
+    return pair(tag(num), tag(den));
+  }
+
+  put('reduce', list('polynomial', 'polynomial', 'polynomial'), (d, n, g) =>
+    reduce_poly(d, n, g),
+  );
 
   put('add', list('polynomial', 'polynomial'), (p1, p2) =>
     tag(add_poly(p1, p2)),
@@ -233,6 +263,9 @@ function install_term_package(put, get, apply_generic) {
 
   const is_equal_to_zero = (x) => apply_generic('is_equal_to_zero', list(x));
   const is_equal = (x, y) => apply_generic('is_equal', list(x, y));
+  const make_real = (n) => get('make', 'real')(n);
+  const gcd = (x, y) => apply_generic('gcd', list(x, y));
+  const generic_reduce = (n, d, g) => apply_generic('reduce', list(n, d, g));
 
   const add = (x, y) => apply_generic('add', list(x, y));
   const mul = (x, y) => apply_generic('mul', list(x, y));
@@ -322,34 +355,117 @@ function install_term_package(put, get, apply_generic) {
           contents(negate_term_list(mul_terms(list(new_term), L2))),
         );
         const rest_of_result = div_terms(new_term_list, L2);
-        return pair(head(new_term_list), rest_of_result);
+
+        return pair(
+          adjoin_term(new_term, head(rest_of_result)),
+          tail(rest_of_result),
+        );
+
+        //return pair(new_term, rest_of_result);
       }
     }
   }
 
-  // remainder terms
+  // pseudoremainder terms
 
-  function remainder_terms(L1, L2) {
-    function redu(prev, curr) {
-      if (prev === true) return pair(curr, null);
-      if (is_null(curr)) return true;
-      if (prev === false) return false;
-      return pair(curr, prev);
-    }
+  function pseudoremainder_terms(L1, L2) {
+    const raise = (x, n) =>
+      n === 0 ? 1
+      : n & 1 ? x * raise(x, n - 1)
+      : raise(x * x, n / 2);
+
+    const t1 = first_term(L1);
+    const t2 = first_term(L2);
+
+    const o1 = order(t1);
+    const o2 = order(t2);
+    const c = contents(coeff(t2));
+    const exp = raise(c, 1 + o1 - o2);
+
+    L1 = mul_term_by_all_terms(make_term(0, make_real(exp)), L1);
+
     const result = div_terms(L1, L2);
-    const remainder = sort_term_list(reduce(redu, false, result));
 
-    // if remainder is null, return null
-    // if result null, return real 1 (then the next remainder will be null and result of gcc real 1)
-
-    display(result);
-    debugger;
+    return is_null(head(tail(result))) ? null : tail(result);
   }
 
   // gcd terms
 
-  const gcd_terms = (a, b) =>
-    is_empty_termlist(b) ? list_tag(a) : gcd_terms(b, remainder_terms(a, b));
+  function gcd_terms(a, b) {
+    const gcd_iter = (x, y) =>
+      is_empty_termlist(y) ?
+        list_tag(x)
+      : gcd_iter(y, pseudoremainder_terms(x, y));
+
+    const result = gcd_iter(a, b);
+
+    // reduce result common factors form coefficients
+    const coeffs = map(coeff, contents(result));
+    const coeff_gcd = reduce((a, b) => gcd(a, b), head(coeffs), tail(coeffs));
+
+    return list_tag(
+      map(
+        (term) =>
+          make_term(head(tail(term)), div(head(tail(tail(term))), coeff_gcd)),
+        contents(result),
+      ),
+    );
+  }
+
+  function div_cut_terms(L1, L2) {
+    const iter = (terms) =>
+      is_null(head(terms)) ? null : pair(head(terms), iter(tail(terms)));
+
+    const result = iter(div_terms(L1, L2));
+    return result;
+  }
+
+  // generic reduce
+
+  function reduce_terms(N, D, G) {
+    const raise = (x, n) =>
+      n === 0 ? 1
+      : n & 1 ? x * raise(x, n - 1)
+      : raise(x * x, n / 2);
+
+    const n1o = order(first_term(N));
+    const d1o = order(first_term(D));
+    const g1 = first_term(G);
+
+    const o1 = n1o > d1o ? n1o : d1o;
+    const o2 = order(g1);
+    const c = contents(coeff(g1));
+    const exp = raise(c, 1 + o1 - o2);
+
+    const num = mul_term_by_all_terms(make_term(0, make_real(exp)), N);
+    const den = mul_term_by_all_terms(make_term(0, make_real(exp)), D);
+
+    const num_result = div_terms(num, G);
+    const den_result = div_terms(den, G);
+
+    // simplify
+
+    const num_coeffs = map(coeff, contents(head(num_result)));
+    const den_coeffs = map(coeff, contents(head(den_result)));
+
+    const all_coeffs = append(num_coeffs, den_coeffs);
+    const final_gcd = reduce(
+      (a, b) => gcd(a, b),
+      head(all_coeffs),
+      tail(all_coeffs),
+    );
+
+    const simplified_num = map(
+      (term) => make_term(order(term), div(coeff(term), final_gcd)),
+      head(num_result),
+    );
+    const simplified_den = map(
+      (term) => make_term(order(term), div(coeff(term), final_gcd)),
+      head(den_result),
+    );
+
+    return pair(simplified_num, simplified_den);
+  }
 
   // lex ordering
 
@@ -420,6 +536,12 @@ function install_term_package(put, get, apply_generic) {
   put('is_equal', list('term_list', 'term_list'), is_equal_term_list);
   put('is_equal', list('term', 'term'), is_equal_term);
   put('gcd', list('term_list', 'term_list'), gcd_terms);
+  put('div_cut', list('term_list', 'term_list'), (L1, L2) =>
+    list_tag(div_cut_terms(L1, L2)),
+  );
+  put('reduce', list('term_list', 'term_list', 'term_list'), (d, n, g) =>
+    reduce_terms(d, n, g),
+  );
 }
 
 export {

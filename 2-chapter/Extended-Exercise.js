@@ -5,6 +5,7 @@ import {
   error,
   map,
   display,
+  tail,
 } from 'sicp';
 
 import {
@@ -17,6 +18,8 @@ import {
 
 import { get, put, type_tag, contents } from './table-helper.js';
 
+import { l_to_arr, tl_to_arr } from './helper.js';
+
 //############################################################################//
 //                                                                            //
 //                             Generic operations                             //
@@ -28,6 +31,8 @@ const mul = (x, y) => apply_generic('mul', list(x, y));
 const sub = (x, y) => apply_generic('sub', list(x, y));
 const div = (x, y) => apply_generic('div', list(x, y));
 const negate = (x) => apply_generic('neg', list(x));
+const gcd = (x, y) => apply_generic('gcd', list(x, y));
+const gcd_div = (x, y) => apply_generic('gcd_div', list(x, y));
 
 const make_real = (n) => get('make', 'real')(n);
 const make_rational = (n, d) => get('make', 'rational')(n, d);
@@ -58,45 +63,6 @@ const tower = list(install_real_package(put, get));
 //                                                                            //
 //############################################################################//
 
-const p1 = make_polynomial(
-  'x',
-  make_term_list(list(make_term(5, make_real(1)), make_term(0, make_real(-1)))),
-);
-const p2 = make_polynomial(
-  'x',
-  make_term_list(list(make_term(2, make_real(1)), make_term(0, make_real(-1)))),
-);
-const z1 = make_polynomial('z', make_term_list(list(make_term(3, p1))));
-const z2 = make_polynomial('z', make_term_list(list(make_term(3, p2))));
-
-// try {
-//   add(p1, p2);
-// } catch (error) {
-//   display(error, 'addition tests failed');
-// }
-// try {
-//   add(z1, z2);
-// } catch (error) {
-//   display(error, 'addition where coeffs are polys tests failed');
-// }
-// try {
-//   mul(p1, p2);
-//   mul(z1, z2);
-// } catch (error) {
-//   display(error, 'multiplication tests failed');
-// }
-// try {
-//   sub(p1, p2);
-//   sub(z1, z2);
-// } catch (error) {
-//   display(error, 'subtraction tests failed');
-// }
-// try {
-//   div(p1, p2);
-// } catch (error) {
-//   display(error, 'division tests failed');
-// }
-
 function apply_generic(op, args) {
   const apply = (fun, args) => apply_in_underlying_javascript(fun, args);
   const type_tags = map(type_tag, args);
@@ -115,14 +81,61 @@ function apply_generic(op, args) {
   }
 }
 
-const p3 = make_polynomial(
+////////////////////////////////////////////////////////////////////////////////
+
+// example from 2.95 working
+// const P1 = make_polynomial(
+//   'x',
+//   make_term_list(
+//     list(
+//       make_term(2, make_real(1)),
+//       make_term(1, make_real(-2)),
+//       make_term(0, make_real(1)),
+//     ),
+//   ),
+// );
+
+// const P2 = make_polynomial(
+//   'x',
+//   make_term_list(list(make_term(2, make_real(11)), make_term(0, make_real(7)))),
+// );
+
+// const P3 = make_polynomial(
+//   'x',
+//   make_term_list(list(make_term(1, make_real(13)), make_term(0, make_real(5)))),
+// );
+
+// const Q1 = mul(P1, P2);
+// const Q2 = mul(P1, P3);
+
+// const rf = make_rational(Q1, Q2);
+
+// display(rf);
+
+////////////////////////////////////////////////////////////////////////////////
+
+const P1 = make_polynomial(
   'x',
-  make_term_list(list(make_term(5, make_real(1)), make_term(0, make_real(-1)))),
+  make_term_list(list(make_term(1, make_real(1)), make_term(0, make_real(1)))),
 );
-const p4 = make_polynomial(
+
+const P2 = make_polynomial(
+  'x',
+  make_term_list(list(make_term(3, make_real(1)), make_term(0, make_real(-1)))),
+);
+
+const P3 = make_polynomial(
+  'x',
+  make_term_list(list(make_term(1, make_real(1)))),
+);
+
+const P4 = make_polynomial(
   'x',
   make_term_list(list(make_term(2, make_real(1)), make_term(0, make_real(-1)))),
 );
-const rf = make_rational(p3, p4);
 
-// display(rf);
+// Create the rational functions
+const Q1 = make_rational(P1, P2);
+const Q2 = make_rational(P3, P4);
+
+// add(rf1, rf2);

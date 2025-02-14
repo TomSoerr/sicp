@@ -31,7 +31,7 @@ function $list_to_array(l, arr) {
 /**
  * @param {*} l - list
  */
-function list_to_array(l) {
+function l_to_arr(l) {
   return $list_to_array(l, []);
 }
 
@@ -70,4 +70,23 @@ function sort_list(compare, L) {
   return sort(null, L);
 }
 
-export { reduce, list_to_array, sort_list };
+function tl_to_arr(tl) {
+  const arr = l_to_arr(tl);
+
+  function term_to_expression(t) {
+    let coeff = t[1][1][0][1];
+    let exp = t[1][0];
+
+    coeff = coeff === 1 ? '' : coeff;
+    exp =
+      exp === 0 ? ''
+      : exp === 1 ? 'x'
+      : 'x^' + exp;
+
+    return `${coeff}${exp}`;
+  }
+
+  return arr.map(term_to_expression);
+}
+
+export { reduce, l_to_arr, sort_list, tl_to_arr };
