@@ -76,9 +76,10 @@ function install_rational_package(put, get, apply_generic) {
 //############################################################################//
 
 function install_real_package(put, get) {
+  const abs = (a) => (a < 0 ? -a : a);
   const tag = (x) => attach_tag('real', x);
   const reduce_rational = (n, d, g) => pair(tag(n / g), tag(d / g));
-  const gcd_real = (a, b) => (b === 0 ? tag(a) : gcd_real(b, a % b));
+  const gcd_real = (a, b) => (b === 0 ? tag(abs(a)) : gcd_real(b, a % b));
 
   put('gcd', list('real', 'real'), (x, y) => gcd_real(x, y));
   put('add', list('real', 'real'), (x, y) => tag(x + y));
@@ -370,7 +371,8 @@ function install_term_package(put, get, apply_generic) {
 
   function pseudoremainder_terms(L1, L2) {
     const raise = (x, n) =>
-      n === 0 ? 1
+      x === 1 ? 1
+      : n === 0 ? 1
       : n & 1 ? x * raise(x, n - 1)
       : raise(x * x, n / 2);
 
@@ -403,13 +405,21 @@ function install_term_package(put, get, apply_generic) {
     const coeffs = map(coeff, contents(result));
     const coeff_gcd = reduce((a, b) => gcd(a, b), head(coeffs), tail(coeffs));
 
-    return list_tag(
-      map(
-        (term) =>
-          make_term(head(tail(term)), div(head(tail(tail(term))), coeff_gcd)),
-        contents(result),
-      ),
+    const final_gcd = map(
+      (term) =>
+        make_term(head(tail(term)), div(head(tail(tail(term))), coeff_gcd)),
+      contents(result),
     );
+
+    const t1 = coeff(head(final_gcd));
+
+    if (tail(t1) < 0) {
+      return list_tag(
+        mul_term_by_all_terms(make_term(0, make_real(-1)), final_gcd),
+      );
+    }
+
+    return list_tag(final_gcd);
   }
 
   function div_cut_terms(L1, L2) {
@@ -440,13 +450,14 @@ function install_term_package(put, get, apply_generic) {
     const num = mul_term_by_all_terms(make_term(0, make_real(exp)), N);
     const den = mul_term_by_all_terms(make_term(0, make_real(exp)), D);
 
-    const num_result = div_terms(num, G);
-    const den_result = div_terms(den, G);
+    const num_result = head(div_terms(num, G));
+    const den_result = head(div_terms(den, G));
 
+    // remove remainder
     // simplify
 
-    const num_coeffs = map(coeff, contents(head(num_result)));
-    const den_coeffs = map(coeff, contents(head(den_result)));
+    const num_coeffs = map(coeff, num_result);
+    const den_coeffs = map(coeff, den_result);
 
     const all_coeffs = append(num_coeffs, den_coeffs);
     const final_gcd = reduce(
@@ -457,14 +468,14 @@ function install_term_package(put, get, apply_generic) {
 
     const simplified_num = map(
       (term) => make_term(order(term), div(coeff(term), final_gcd)),
-      head(num_result),
+      num_result,
     );
     const simplified_den = map(
       (term) => make_term(order(term), div(coeff(term), final_gcd)),
-      head(den_result),
+      den_result,
     );
 
-    return pair(simplified_num, simplified_den);
+    return pair(list_tag(simplified_num), list_tag(simplified_den));
   }
 
   // lex ordering

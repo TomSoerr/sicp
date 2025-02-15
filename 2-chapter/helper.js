@@ -77,7 +77,6 @@ function tl_to_arr(tl) {
     let coeff = t[1][1][0][1];
     let exp = t[1][0];
 
-    coeff = coeff === 1 ? '' : coeff;
     exp =
       exp === 0 ? ''
       : exp === 1 ? 'x'
